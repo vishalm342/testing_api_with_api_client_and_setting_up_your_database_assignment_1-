@@ -33,19 +33,51 @@
 
 
 const express = require('express');
-const { resolve } = require('path');
-
+const fs = require('fs'); // File system module to read JSON file
+const path = require('path'); // Add this line to import the path module
 const app = express();
 const port = 3010;
 
 app.use(express.static('static'));
+app.use(express.json());
+
+const dataFilePath = path.join(__dirname,'data.json');
+
+const getStudent = () => {
+    try{
+        const data = fs.readFileSync(dataFilePath,'utf-8');
+        return JSON.parse(data);
+    }
+    catch(err){
+        console.error('Error in reading the file:',err);
+        return [];
+    }
+}
 
 app.get('/', (req, res) => {
-  res.sendFile(resolve(__dirname, 'pages/index.html'));
+    res.sendFile(path.resolve(__dirname, 'pages/index.html'));  
 });
+
+app.post('/students/above-threshold',(req,res)=>{
+    const {threshold} = req.body;
+
+    if (threshold === undefined){
+        return res.status(400).send({
+            error:'Threshold required in the request body'
+        })
+    }
+
+const students = getStudent();
+const filterStudents = students.filter(student => student.total > threshold);
+
+return res.json({
+    count:filterStudents.length,
+    students: filterStudents,
+});
+});
+
 
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);
 });
-
 
